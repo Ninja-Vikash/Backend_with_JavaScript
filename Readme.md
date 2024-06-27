@@ -21,7 +21,10 @@ mkdir public src
 
 cd src
 
-# directories for src
+# RUn the command for files
+touch index.js app.js constants.js
+
+# Run the command for directories
 mkdir controllers db models middlewares routes utils
 ```
 
@@ -49,8 +52,7 @@ npm i express dotenv mongoose
   },
 ```
 
-`.gitignore` -> 
-[gitignore builder](https://mrkandreev.name/snippets/gitignore-generator/)
+`.gitignore` -> <a href="https://mrkandreev.name/snippets/gitignore-generator/" target="_blank">gitignore builder</a>
 
 
 `.prettierrc`
@@ -91,3 +93,46 @@ dotenv.config({
 > "scripts": {
 >   "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
 > },
+
+***
+
+### Code snippets
+`src/index.js`
+```js
+import dotenv from "dotenv"
+import connectDB from "./db/index.js";
+
+dotenv.config({
+    path: "./env"
+})
+
+connectDB()
+```
+
+`src/db/index.js`
+```js
+import mongoose from "mongoose";
+import { DB_NAME } from "../constants.js";
+
+const connectDB = async () => {
+    try {
+        const connectionInstance = await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`)
+        console.log(`\n MongoDB connected !! DB HOST: ${connectionInstance.connection.host}`)
+    } catch (error) {
+        console.error("MONGODB connect FAILED ", error)
+        process.exit(0)
+    }
+}
+
+export default connectDB;
+```
+
+### Error resolving
+By Providing the complete path in `import` method we are solving errors
+```js
+import connectDB from "./db/index.js";
+//...
+
+import { DB_NAME } from "../constants.js";
+//...
+```

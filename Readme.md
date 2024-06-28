@@ -97,17 +97,16 @@ dotenv.config({
 ***
 
 ### Code snippets
-`src/index.js`
-```js
-import dotenv from "dotenv"
-import connectDB from "./db/index.js";
-
-dotenv.config({
-    path: "./env"
-})
-
-connectDB()
-```
+> [!IMPORTANT]\
+> **Error Resolving**\
+> By Providing the complete path in `import` method we can solve errors
+> ```js
+> import connectDB from "./db/index.js";
+> //...
+> 
+> import { DB_NAME } from "../constants.js";
+> //...
+> ```
 
 `src/db/index.js`
 ```js
@@ -127,12 +126,49 @@ const connectDB = async () => {
 export default connectDB;
 ```
 
-### Error resolving
-By Providing the complete path in `import` method we are solving errors
+`src/index.js`
 ```js
+import dotenv from "dotenv"
 import connectDB from "./db/index.js";
-//...
 
-import { DB_NAME } from "../constants.js";
-//...
+dotenv.config({
+    path: "./env"
+})
+
+connectDB()
+.then(()=>{
+    app.listen(process.env.PORT || 8000, ()=>{
+        console.log(`\n Server is running at port ${process.env.PORT}`)
+    })
+})
+.catch((err)=>{
+    console.log("MONGODB Connection failed !!! ", err )
+})
+```
+
+**Install dependencies**
+```bash
+npm i cookie-parser cors
+```
+
+`src/app.js`
+```js
+import express from "express"
+import cors from "cors"
+import cookieParser from "cookie-parser"
+
+const app = express()
+
+app.use(cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true
+}))
+
+app.use(express.json({ limit: "16kb" }))
+app.use(express.urlencoded({ extended: true, limit: "16kb" }))
+app.use(express.static("public"))
+app.use(cookieParser())
+
+
+export { app }
 ```

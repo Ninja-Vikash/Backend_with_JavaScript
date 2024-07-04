@@ -86,7 +86,7 @@ Reference: <a href="https://expressjs.com/" target="_blank">**express**</a> | <a
 },
 ```
 
-`.gitignore` -> <a href="https://mrkandreev.name/snippets/gitignore-generator/" target="_blank">gitignore builder</a>
+`.gitignore` -> <a href="https://mrkandreev.name/snippets/gitignore-generator/#Node" target="_blank">gitignore builder</a>
 
 
 `.prettierrc`
@@ -201,6 +201,9 @@ connectDB()
 
 ### Use of `middlewares`
 `middlewares` are used modifying **request** and **response** objects, ending the request-response cycle and calling the next middleware function in the stack.<br/>
+
+Remember this quotation: <pre>middleware be like "**kahin jane se phele mujhse mil kar jana**" 😁</pre>
+
 Usually created with `use` keyword.
 ```js
 app.use((err, req, res, next) => {
@@ -551,3 +554,68 @@ userSchema.methods.generateRefreshToken = function(){
 > Refresh Token has less payload compare to Access Token.
 > 
 > Create environment variables for `ACCESS_TOKEN_SECRET`, `ACCESS_TOKEN_EXPIRY`, `REFRESH_TOKEN_SECRET` & `REFRESH_TOKEN_EXPIRY`
+
+#### File Handling
+We don't handle files in our local server instead we use third party services like **AWS** and **cloudinary**.
+
+**Install dependencies**
+```bash
+npm i cloudinary multer
+```
+
+Reference: <a href="https://cloudinary.com/" target="_blank">**Cloudinary**</a> | <a href="https://www.npmjs.com/package/multer" target="_blank">**Multer**</a>
+
+To upload files in cloudinary we use multer as a middleware.
+
+`src/utils/cloudinary.js`
+```js
+import { v2 as cloudinary } from "cloudinary"
+import fs from "fs"
+
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const uploadOnCloudinary = async (localFilePath)=> {
+    try {
+        if (!localFilePath) return null
+        // upload the file on cloudinary
+        const response = await cloudinary.uploader.upload(localFilePath, {
+            resource_type: "auto"
+        })
+        // file has been uploaded successfully
+        console.log("File is uploaded on cloudinary", response.url);
+        return response;
+
+    } catch (error) {
+        fs.unlinkSync(localFilePath) // remove the locally saved temporary file as the uplaod operation got failed
+        return null;
+    }
+}
+
+export { uploadOnCloudinary }
+```
+> [!NOTE]\
+> The code snippet is **Reusable**\
+> Make sure you have created environment variables or not.
+
+`src/middlewares/multer.middleware.js`
+```js
+import multer from "multer";
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, "./public/temp")
+    },
+    filename: function (req, file, cb) {
+      cb(null, file.originalname)
+    }
+})
+
+export const upload = multer({ storage })    // ES6 Module `multer({ storage: storage })`
+```
+> [!IMPORTANT]\
+> Create some directories as `public/temp`\
+> To hold temporary files.

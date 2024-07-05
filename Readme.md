@@ -12,15 +12,67 @@ Thank you! **Hitesh Sir**, for providing us with such amazing content for free! 
 
 Checkout the videos for better explanation 👆
 
+***
+> [!NOTE]\
+> **What is actually a Server? 🤔**<br/>
+> Server is just a software to serve something.<br/>
+> Server can be our phone or laptop.<br/>
+> Server doesn't mean a big computer.
+> 
+> **Two major component in backend 🧩**</br>
+> A Programming Language
+> <div align="left">
+> <img src="https://raw.githubusercontent.com/github/explore/master/topics/java/java.png" alt="Java Logo" height="40"> &nbsp;&nbsp;&nbsp;&nbsp;
+> <img src="https://raw.githubusercontent.com/github/explore/master/topics/javascript/javascript.png" height="40px"> &nbsp;&nbsp;&nbsp;&nbsp;
+> <img src="https://raw.githubusercontent.com/github/explore/master/topics/php/php.png" alt="PHP Logo" height="40"> &nbsp;&nbsp;&nbsp;&nbsp;
+> <img src="https://raw.githubusercontent.com/github/explore/master/topics/cpp/cpp.png" alt="C++ Logo" height="40"> &nbsp;&nbsp;&nbsp;&nbsp;
+> <img src="https://raw.githubusercontent.com/github/explore/master/topics/go/go.png" alt="Go Logo" height="40"> 
+> </div>
+> 
+> <br/>
+> A Database
+> <div align="left">
+> <img src="https://www.vectorlogo.zone/logos/mongodb/mongodb-ar21.svg" alt="MongoDB Logo" height="40">
+> <img src="https://www.vectorlogo.zone/logos/mysql/mysql-ar21.svg" alt="MySQL Logo" height="40">
+> <img src="https://raw.githubusercontent.com/github/explore/master/topics/postgresql/postgresql.png" alt="PostgreSQL Logo" height="40"> &nbsp;&nbsp;&nbsp;&nbsp;
+> <img src="https://raw.githubusercontent.com/github/explore/master/topics/sqlite/sqlite.png" alt="SQLite Logo" height="40">
+> </div>
+> <br/>
+> 
+> **Use of backend** ⚒️\
+> In backend we deals with either\
+> `DATA` --> { `Array`, `String` & `Object` }\
+> `FILE` --> { Image, Video & PDF }\
+> `Third Party API`
+>
+>
+> **Requirements** ⚙️\
+> Code Editor 💻\
+> **Visual Studio Code** (VS Code) is a free, open-source Integrated Development Environment (**IDE**) developed by **Microsoft**, offering features like **debugging**, **version control**, and extensions to support various programming languages.
+>
+> Download <a href="https://code.visualstudio.com/" target="_blank">**VS Code**</a> !
+> 
+> A JavaScript run time\
+> `Node.js`, `Deno` or `Bun`\
+> Install **`Node.js` in your machine.** Because without node js `npm` commands won't work.
+> 
+> Download <a href="" target="_blank">**Node.js**</a> !
+>
+> Confirm your installation
+> ```bash
+> node --version    # v20.15.0 or higher
+> 
+> npm --version     # 10.7.0 or higher
+> ```
+
 ## Getting Started 🚀
-To write code we need a directory, where we can start our work.<br/>
-Create a directory first for example `backend`
+Create a directory where you are going to set up your project.<br/>
+For example `backend`
 
 Drag it or open it using <a href="https://code.visualstudio.com/" target="_blank">**Visual Studio Code (VS Code)**</a><br/>
-> [!NOTE]\
-> **Visual Studio Code** (VS Code) is a free, open-source Integrated Development Environment (**IDE**) developed by **Microsoft**, offering features like **debugging**, **version control**, and extensions to support various programming languages.
 
-### Follow the steps
+
+### Set up your backend environment with industry-level quality 🔥
 **Initialize with npm**
 ```bash
 npm init

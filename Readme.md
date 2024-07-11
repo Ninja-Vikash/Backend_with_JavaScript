@@ -356,6 +356,8 @@ class ApiResponse {
         this.success = statusCode < 400
     }
 }
+
+export { ApiResponse }
 ```
 HTTP statusCode Responses<br/>
 Reference: <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status" target="_blank">**MDN**</a>
@@ -542,7 +544,7 @@ import bcrypt from "bcrypt";
 userSchema.pre("save", async function(next){
     if(!this.isModified("password")) return next();
 
-    this.password = bcrypt.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next()
 })
 
@@ -671,3 +673,62 @@ export const upload = multer({ storage })    // ES6 Module `multer({ storage: st
 > [!IMPORTANT]\
 > Create some directories as `public/temp`\
 > To hold temporary files.
+
+### `Controllers` and `Routes`
+`src/controllers/user.controller.js`
+```js
+import {asyncHandler} from "../utils/asyncHandler.js"
+
+const registerUser = asyncHandler( async (req, res) => {
+    await res.status(200).json({
+        message: "OK! Response received"
+    })
+} )
+
+export { registerUser }
+```
+`src/routes/user.routes.js`
+```js
+import { Router } from "express"
+import { registerUser } from "../controllers/user.controller.js"
+
+const router = Router()
+
+router.route("/register").post(registerUser)
+
+export default router
+```
+> [!NOTE]\
+> We will use `{ Router }` from "express"
+
+**Update `app.js` file**
+```js
+// ...
+// All middlewares
+// ... 
+
+// routes
+
+import userRouter from "./routes/user.routes.js"
+
+// routes declaration
+
+app.use("/api/v1/users", userRouter)
+
+
+export { app }
+```
+> [!IMPORTANT]\
+> We will write all routes below the already created middlewares\
+> Because we are going to use the route as a middleware.
+>
+> Now, We can test the response using Postman\
+> `http://localhost:8000/api/v1/users/register`
+> 
+> It will give a response as
+> ```json
+> {
+>    message: "OK! Response received"
+> }
+> ```
+> On a `POST` request at the given URL.

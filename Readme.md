@@ -675,6 +675,9 @@ export const upload = multer({ storage })    // ES6 Module `multer({ storage: st
 > To hold temporary files.
 
 ### `Controllers` and `Routes`
+
+We will see on scroll down. How can we write controller's code effectively.
+
 `src/controllers/user.controller.js`
 ```js
 import {asyncHandler} from "../utils/asyncHandler.js"
@@ -722,7 +725,7 @@ export { app }
 > We will write all routes below the already created middlewares\
 > Because we are going to use the route as a middleware.
 >
-> Now, We can test the response using Postman\
+> Now, We can test the response using **Postman**\
 > `http://localhost:8000/api/v1/users/register`
 > 
 > It will give a response as
@@ -732,3 +735,506 @@ export { app }
 > }
 > ```
 > On a `POST` request at the given URL.
+
+#### How to write effective code for controllers ? 😎
+If you want to create a controller which will handle all the user related functions like **login** or **signup**.
+
+Think and write the **ALGORITHMS** for the controller, What you need in your controller and what you are going to do there.<br/>
+For example:
+```js
+// ALGORITHMS
+
+// get user details from frontend
+// validation - not empty
+// check if user already exists: username, email
+// check for images, check for avatar
+// upload them to cloudinary, avatar
+// create user object - create entry in db
+// remove password and refresh token field from response
+// check for user creation
+// return res
+```
+
+> [!IMPORTANT]\
+> **Algorithms are nothing just steps**. 😁
+>
+> Algorithm helps to write the code in a order\
+> If we write all the steps before writing the code.\
+> It saves our lots of time because we know what is the next step.\
+> We don't need to worry about the next step, what should be.
+
+#### How to use `middlewares` in `Router` ?
+`src/routes/user.routes.js`
+```js
+/*
+    imports ...
+*/
+import { upload } from "../middlewares/multer.middleware.js"
+
+router.route("/register").post(
+    upload.fields([
+        {
+            name: "avatar",
+            maxCount: 1
+        },
+        {
+            name: "coverImage",
+            maxCount: 1
+        }
+    ]),
+    registerUser
+)
+```
+
+> [!IMPORTANT]\
+> We will inject a middleware before reaching the route as\
+> `router.route("/register").post(upload.fields([])), registerUser)`
+> 
+> In this case we are using multer as a middleware for file uploading on cloudinary\
+> We have multiple options for uploading a file like `upload.single`  `upload.any`  `upload.array`\
+> We are using here `upload.fields`
+>
+> The `upload.fields` method allows you to define multiple file fields in a single request.\
+> This is useful when you need to upload more than one file field, each with its own set of rules.\
+> Each field can have its own name and maximum count of files that can be uploaded.\
+> This provides fine-grained control over the file upload process.
+
+#### Lets rewrite the `user.controller` file
+We will follow the Algorithm already written
+
+**1. Get data from frontend**
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+
+const registerUser = asyncHandler( async (req, res) => {
+
+    const { fullName, email, username, password } = req.body;
+
+})
+
+export { registerUser }
+```
+> [!NOTE]\
+> Obviously! We don't have any frontend\
+> That is why we are using POSTMAN for sending data
+>
+> To access data in backend
+> Use `req.body`\
+> Also, We can extract the data as
+> ```js
+> const { fullName, email, username, password } = req.body;
+> ```
+> For safety purpose must console the data for the clarity what we are getting.
+
+**2. Validation for not empty fields**
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+
+const registerUser = asyncHandler( async (req, res) => {
+
+    const { fullName, email, username, password } = req.body;
+
+    if (
+        [fullName, email, username, password].some((field)=> field?.trim() === "")
+    ) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+})
+
+export { registerUser }
+```
+> [!NOTE]\
+> In the second step, we are checking for empty fields\
+> If any throw an Error
+>
+> ```js
+> if (
+>     [fullName, email, username, password].some((field)=> field?.trim() === "")
+> )
+> ```
+> The `some` method is used to check if any field in the array is empty.\
+> It will return `true`.\
+> Sometimes we don't sure, we have the value or not in that situation it is better to use optional chaining.\
+> `field?.trim() === ""`\
+> `?.` is the optional chaining operator in JavaScript.\
+> It allows you to safely access properties or call methods on an object that might be `null` or `undefined`.\
+> If field is `null` or `undefined`, the expression `field?.trim()` will return `undefined` instead of throwing an error.\
+> `trim()` removes whitespaces
+>
+> Since, We have a custom **ApiError** utility for handling errors\
+> Therefore, Just simply `import` it and pass two arguments as the **StatusCode** and **CustomMessage**
+> ```js
+> throw new ApiError(400, "All fields are required")
+> ```
+> `ApiError` is a class. `new` keyword is used to create new class object.
+
+**3. Check user exist on not**
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+
+const registerUser = asyncHandler( async (req, res) => {
+
+    const { fullName, email, username, password } = req.body;
+
+    if (
+        [fullName, email, username, password].some((field)=> field?.trim() === "")
+    ) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    const existedUser = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+
+    if (existedUser) {
+        throw new ApiError(409, "User with email or username already exist")
+    }
+
+})
+
+export { registerUser }
+```
+> [!NOTE]\
+> For checking the user already exist or not in the database. We need a database call.\
+> We have `user.model.js` file which is talking with database.\
+> `import` it.\
+> Remember our database is on another continent.\
+> It will take time to connect, must use `await`\
+> ```js
+> const existedUser = await User.findOne({
+>     $or: [{ username }, { email }]
+> })
+> ```
+> `User.findOne()` is a method to find a document inside the collection.\
+> To apply filters `$or: [{ username }, { email }]`\
+> Checks if a user available with the username or email
+>
+> ```js
+> if (existedUser) {
+>     throw new ApiError(409, "User with email or username already exist")
+> }
+> ```
+> Throwing custom error.
+
+**4. Check images: Avatar is uploaded or not**
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+
+const registerUser = asyncHandler( async (req, res) => {
+
+    const { fullName, email, username, password } = req.body;
+
+    if (
+        [fullName, email, username, password].some((field)=> field?.trim() === "")
+    ) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    const existedUser = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+
+    if (existedUser) {
+        throw new ApiError(409, "User with email or username already exist")
+    }
+
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+})
+
+export { registerUser }
+```
+> [!NOTE]\
+> Since, We are using multer as middleware.\
+> Therefore, We get files from `req.files` as
+> ```js
+> const avatarLocalPath = req.files?.avatar[0]?.path;
+> ```
+> We are assuming that file path is stored in first element.\
+> And for safety purpose, we will try to access it using optional chaining. `?.`\
+> Similarly we are getting the local path of cover image.
+> 
+> ```js
+> if (!avatarLocalPath) {
+>     throw new ApiError(400, "Avatar file is required")
+> }
+> ```
+> Lets check for avatar is uploaded or not. If avatar is not uploaded throw an error.
+
+**5. Upload images on Cloudinary: Check avatar is uploaded or not**
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+
+const registerUser = asyncHandler( async (req, res) => {
+
+    const { fullName, email, username, password } = req.body;
+
+    if (
+        [fullName, email, username, password].some((field)=> field?.trim() === "")
+    ) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    const existedUser = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+
+    if (existedUser) {
+        throw new ApiError(409, "User with email or username already exist")
+    }
+
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+    if (!avatar) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+})
+
+export { registerUser }
+```
+> [!NOTE]\
+> For uploading images on **Cloudinary** we have already created utility file for this.\
+> Uploading images may take time. Must `await` the method
+> ```js
+> const avatar = await uploadOnCloudinary(avatarLocalPath)
+> ```
+> And pass the local path of the images to the method
+>
+> Again check the avatar is uploaded or not in Cloudinary, If not uploaded throw an error.
+
+**6. Create a user object in database**
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+
+const registerUser = asyncHandler( async (req, res) => {
+
+    const { fullName, email, username, password } = req.body;
+
+    if (
+        [fullName, email, username, password].some((field)=> field?.trim() === "")
+    ) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    const existedUser = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+
+    if (existedUser) {
+        throw new ApiError(409, "User with email or username already exist")
+    }
+
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+    if (!avatar) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+    const user = await User.create({
+        fullName,
+        avatar: avatar.url,
+        coverImage: coverImage?.url || "",
+        email,
+        password,
+        username: username.toLowerCase()
+    })
+
+})
+
+export { registerUser }
+```
+> [!NOTE]\
+> Since, We are dealing with database.\
+> We know that database is in another continent.\
+> Then it will definitely take time to process so use `await`.
+> `User.create({})` will create a new object in database.
+> ```js
+> const user = await User.create({
+>     fullName,
+>     avatar: avatar.url,
+>     coverImage: coverImage?.url || "",
+>     email,
+>     password,
+>     username: username.toLowerCase()
+> })
+> ```
+> We are storing the avatar url given by **Cloudinary**\
+> Similarly we are storing the cover image url but we will take it optionally because not required\
+> Instead of use a blank string\
+> We want to store **username** in lowercase that is why `username.toLowerCase()`
+
+**7. Remove password and Refresh Token fields**
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+
+const registerUser = asyncHandler( async (req, res) => {
+
+    const { fullName, email, username, password } = req.body;
+
+    if (
+        [fullName, email, username, password].some((field)=> field?.trim() === "")
+    ) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    const existedUser = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+
+    if (existedUser) {
+        throw new ApiError(409, "User with email or username already exist")
+    }
+
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+    if (!avatar) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+    const user = await User.create({
+        fullName,
+        avatar: avatar.url,
+        coverImage: coverImage?.url || "",
+        email,
+        password,
+        username: username.toLowerCase()
+    })
+
+    const createdUser = await User.findById(user._id).select(
+        "-password -refreshToken"
+    )
+
+    if (!createdUser) {
+        throw new ApiError(500, "Something went wrong while registering the user")
+    }
+
+})
+
+export { registerUser }
+```
+> [!NOTE]\
+> To check the user we again call the database
+> `User.findById(user._id)` will look for the match\
+> ```js
+> const createdUser = await User.findById(user._id).select(
+>     "-password -refreshToken"
+> )
+> ```
+> We can chain it to select the object then we can remove password and refreshToken from the response object.\
+> `select()` method uses a weird syntax I mean a string\
+> Pass the name of fleids to remove from the response object using (-) sign as prefix.\
+> 
+> Now check again registered user is available or not?\
+> If not available throw error response with status code 500 because this is server response error\
+
+**8. Return response**
+
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+const registerUser = asyncHandler( async (req, res) => {
+
+    const { fullName, email, username, password } = req.body;
+
+    if (
+        [fullName, email, username, password].some((field)=> field?.trim() === "")
+    ) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    const existedUser = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+
+    if (existedUser) {
+        throw new ApiError(409, "User with email or username already exist")
+    }
+
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+    if (!avatar) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+    const user = await User.create({
+        fullName,
+        avatar: avatar.url,
+        coverImage: coverImage?.url || "",
+        email,
+        password,
+        username: username.toLowerCase()
+    })
+
+    const createdUser = await User.findById(user._id).select(
+        "-password -refreshToken"
+    )
+
+    if (!createdUser) {
+        throw new ApiError(500, "Something went wrong while registering the user")
+    }
+
+    return res.status(201).json(
+        new ApiResponse(200, createdUser, "User registered successfully")
+    )
+
+} )
+
+export { registerUser }
+```

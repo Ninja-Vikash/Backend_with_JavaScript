@@ -7,10 +7,14 @@
 <a href="https://youtu.be/8k-kK3tsJFY?si=BnhIulAJjI7XarBN" target="_blank">Complete Backend Developer course | Part 2</a>
 
 **About**<br/>
-This documentation is based on the *Complete JavaScript Backend Series* from the *Chai aur Code* YouTube Channel.<br/>
-Thank you! **Hitesh Sir**, for providing us with such amazing content for free! 🙏✨
+Complete JavaScript Backend Setup is based on the *Complete JavaScript Backend Series* from the *Chai aur Code* YouTube Channel.<br/>
+Special Thanks to **Hitesh Sir**, for providing us with such amazing content for free! 🙏✨
 
-Checkout the videos for better explanation 👆
+I will suggest to watch the videos for better explanation 👆
+
+**Description**<br/>
+I have tried to write a comprehensive guide to revise *Complete Backend Developer course*.<br/>
+Here, I explained things as much as I can.<br/>
 
 ***
 > [!NOTE]\
@@ -77,7 +81,7 @@ Drag it or open it using <a href="https://code.visualstudio.com/" target="_blank
 ```bash
 npm init
 ```
-It will ask some questions, answer them accordingly based upon your project.
+> It will ask some questions related to your project. Please answer them accordingly.
 
 **Create files in root directory**
 ```bash
@@ -99,9 +103,10 @@ mkdir controllers db models middlewares routes utils
 
 > [!IMPORTANT]
 > ```bash
-> mkdir folder1 folder2
+> mkdir folder1 folder2 folder3
 > ```
-> Won't work in Windows\
+> Won't work in Windows
+>
 > For execute the command you can use `git-bash`\
 > Or you can create them manually. 😁
 
@@ -174,6 +179,8 @@ CORS_ORIGIN=*
 > eg. `@`, `&` etc
 
 #### Config of environment variable
+Environment variable must load first in your application<br/>
+`src/index.js`
 ```js
 import dotenv from "dotenv"
 
@@ -182,9 +189,9 @@ dotenv.config({
 })
 ```
 > [!WARNING]\
-> This is not a valid method to use `import` syntax with `dotenv`
+> This is not a valid method to use `import` syntax with `dotenv`.
 > 
-> Let's config the `package.json` to use it as a experimental method
+> Let's config the `package.json` to use it as a experimental method.
 > ```json
 > "scripts": {
 >   "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
@@ -204,7 +211,80 @@ dotenv.config({
 > //...
 > ```
 
+#### Code for database connection
 `src/db/index.js`
+```js
+import mongoose from "mongoose";
+
+const connectDB = () => {}
+
+export default connectDB;
+```
+> [!NOTE]\
+> We will connect to database using `mongoose`.\
+> Create a method for database connection and store it in a variable so that we can export it as
+> ```js
+> const connectDB = () => {}
+> ```
+
+```js
+import mongoose from "mongoose";
+
+const connectDB = () => {
+    try {
+
+    } catch (error) {
+
+    }
+}
+
+export default connectDB;
+```
+> [!NOTE]\
+> During database connection some errors can appear.\
+> So it is better to wrap the connection code in the `try` and `catch` wrapper.
+
+```js
+import mongoose from "mongoose";
+
+const connectDB = () => {
+    try {
+
+    } catch (error) {
+        console.error("MONGODB connect FAILED ", error)
+        process.exit(0)
+    }
+}
+
+export default connectDB;
+```
+> [!NOTE]\
+> In catch part we will console the error with connection failed message.
+
+```js
+import mongoose from "mongoose";
+import { DB_NAME } from "../constants.js";
+
+const connectDB = async () => {
+    try {
+        await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`)
+    } catch (error) {
+        console.error("MONGODB connect FAILED ", error)
+        process.exit(0)
+    }
+}
+
+export default connectDB;
+```
+> [!IMPORTANT]\
+> Remember: "*Our database is on another continent.*"\
+> It will take time to process, must use `async` and `await`.
+>
+> `src/constants.js`
+> ```js
+> export const DB_NAME = "video"
+> ```
+
 ```js
 import mongoose from "mongoose";
 import { DB_NAME } from "../constants.js";
@@ -222,15 +302,73 @@ const connectDB = async () => {
 export default connectDB;
 ```
 > [!NOTE]\
-> `DB_NAME` is a constant variable
->
-> `src/constants.js`
-> ```js
-> export const DB_NAME = "test"
-> ```
+> We can store the connection instance in a variable so that we can see some information and console a message for connetion success.
 
+#### Database connection call
+`src/index.js`
+```js
+import dotenv from "dotenv"
+import connectDB from "./db/index.js";
+
+dotenv.config({
+    path: "./env"
+})
+
+connectDB()
+```
+Start the server
+```bash
+npm run dev
+```
+
+#### Create an express server
+`src/app.js`
+```js
+import express from "express"
+
+const app = express()
+
+export { app }
+```
+> [!NOTE]\
+> We will export the app as named export
 
 `src/index.js`
+```js
+import dotenv from "dotenv"
+import connectDB from "./db/index.js";
+import { app } from "./app.js";
+
+dotenv.config({
+    path: "./env"
+})
+
+connectDB()
+.then()
+.catch()
+```
+> [!NOTE]\
+> Since, we have created an `async` function. So that we can use `.then()` and `.catch()` methods.
+
+```js
+import dotenv from "dotenv"
+import connectDB from "./db/index.js";
+import { app } from "./app.js";
+
+dotenv.config({
+    path: "./env"
+})
+
+connectDB()
+.then(()=>{
+    
+})
+.catch((err)=>{
+    console.log("MONGODB Connection failed !!! ", err )
+})
+```
+> Both the method accepts callback
+
 ```js
 import dotenv from "dotenv"
 import connectDB from "./db/index.js";
@@ -313,8 +451,8 @@ const asyncHandler = (requestHandler)=> {
 export { asyncHandler }
 ```
 > [!IMPORTANT]\
-> Save this utility\
-> Reusuable method we will use it more often
+> It is a higher order function which further returns a function\
+> We can reuse the utility. 🤩
 
 `src/utils/ApiError.js`
 ```js
@@ -343,8 +481,9 @@ class ApiError extends Error {
 export { ApiError }
 ```
 > [!NOTE]\
-> Custom API Error response is very useful for defining.\
-> The error fields to appear.
+> Custom API Error response is very useful for simplifying the custom error messages.
+> 
+> Here we are extending the Error class available in node.js
 
 `src/utils/ApiResponse.js`
 ```js
@@ -639,8 +778,9 @@ const uploadOnCloudinary = async (localFilePath)=> {
         const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "auto"
         })
-        // file has been uploaded successfully
-        console.log("File is uploaded on cloudinary", response.url);
+
+        fs.unlinkSync(localFilePath) // remove the locally saved temporary file as the upload operation got success
+
         return response;
 
     } catch (error) {
@@ -901,9 +1041,10 @@ export { registerUser }
 > [!NOTE]\
 > For checking the user already exist or not in the database. We need a database call.\
 > We have `user.model.js` file which is talking with database.\
-> `import` it.\
+> So `import` it.
+>
 > Remember our database is on another continent.\
-> It will take time to connect, must use `await`\
+> It will take time to connect, must use `await`
 > ```js
 > const existedUser = await User.findOne({
 >     $or: [{ username }, { email }]
@@ -918,7 +1059,7 @@ export { registerUser }
 >     throw new ApiError(409, "User with email or username already exist")
 > }
 > ```
-> Throwing custom error.
+> Throws a custom error.
 
 **4. Check images: Avatar is uploaded or not**
 ```js
@@ -956,7 +1097,7 @@ const registerUser = asyncHandler( async (req, res) => {
 export { registerUser }
 ```
 > [!NOTE]\
-> Since, We are using multer as middleware.\
+> Since, We are using **multer** as **middleware**.\
 > Therefore, We get files from `req.files` as
 > ```js
 > const avatarLocalPath = req.files?.avatar[0]?.path;
@@ -1021,9 +1162,9 @@ export { registerUser }
 > ```js
 > const avatar = await uploadOnCloudinary(avatarLocalPath)
 > ```
-> And pass the local path of the images to the method
+> And pass the local path of the images to the method.
 >
-> Again check the avatar is uploaded or not in Cloudinary, If not uploaded throw an error.
+> Again check the avatar is uploaded or not in **Cloudinary**, If not uploaded throw an error.
 
 **6. Create a user object in database**
 ```js
@@ -1081,6 +1222,7 @@ export { registerUser }
 > Since, We are dealing with database.\
 > We know that database is in another continent.\
 > Then it will definitely take time to process so use `await`.
+>
 > `User.create({})` will create a new object in database.
 > ```js
 > const user = await User.create({
@@ -1092,10 +1234,10 @@ export { registerUser }
 >     username: username.toLowerCase()
 > })
 > ```
-> We are storing the avatar url given by **Cloudinary**\
-> Similarly we are storing the cover image url but we will take it optionally because not required\
-> Instead of use a blank string\
-> We want to store **username** in lowercase that is why `username.toLowerCase()`
+> We will store the avatar url given by **Cloudinary**.\
+> Similarly we will store the cover image url but it is not required so chain it optionally.\
+> In case of no input by user show an empty string.\
+> It is better to store **username** in lowercase.
 
 **7. Remove password and Refresh Token fields**
 ```js
@@ -1158,19 +1300,20 @@ const registerUser = asyncHandler( async (req, res) => {
 export { registerUser }
 ```
 > [!NOTE]\
-> To check the user we again call the database
-> `User.findById(user._id)` will look for the match\
+> For removing password and refresh token.\
+> We can store created user reference in a variable using `findById()` method.\
+> `User.findById(user._id)` will look for the match using id.
 > ```js
 > const createdUser = await User.findById(user._id).select(
 >     "-password -refreshToken"
 > )
 > ```
-> We can chain it to select the object then we can remove password and refreshToken from the response object.\
-> `select()` method uses a weird syntax I mean a string\
-> Pass the name of fleids to remove from the response object using (-) sign as prefix.\
+> By chain it to select the object, we can remove **password** and **refreshToken** from the response object.\
+> `select()` method uses a weird syntax I mean a string 🤔\
+> Pass the name of **fleids** to remove from the response object using **(-)** sign as prefix. eg. `-password`
 > 
-> Now check again registered user is available or not?\
-> If not available throw error response with status code 500 because this is server response error\
+> For more safety check again registered user is available or not?\
+> If not available throw error response with status code 500 because this is server response error.
 
 **8. Return response**
 
@@ -1238,3 +1381,12 @@ const registerUser = asyncHandler( async (req, res) => {
 
 export { registerUser }
 ```
+
+### Time to test the user registration route is working or not?
+> [!IMPORTANT]\
+> Keep in mind\
+> "*It is not necessary that your code will work in one go.*\
+> *Bugs, Errors are the part of programming.* 😎"
+>
+> By: *Hitesh Sir*! 💖
+

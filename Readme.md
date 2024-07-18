@@ -62,7 +62,7 @@ Here, I explained things as much as I can.<br/>
 > 
 > Download <a href="" target="_blank">**Node.js**</a> !
 >
-> Confirm your installation
+> Confirm `node.js` installed or not in your machine
 > ```bash
 > node --version    # v20.15.0 or higher
 > 
@@ -94,21 +94,31 @@ mkdir public src
 
 cd src
 
-# Run the command for files
+# Run the commands for creating files and directories in src
 touch index.js app.js constants.js
 
-# Run the command for directories
 mkdir controllers db models middlewares routes utils
+
+# Back to previous directory
+cd ..
+
+cd public
+
+# Run the commands for creating files and directories in public
+mkdir temp && touch temp/.gitkeep
 ```
 
-> [!IMPORTANT]
+> [!WARNING]
 > ```bash
 > mkdir folder1 folder2 folder3
-> ```
-> Won't work in Windows
 >
-> For execute the command you can use `git-bash`\
-> Or you can create them manually. 😁
+> mkdir temp && touch temp/.gitkeep
+> ```
+> Won't work in Windows. 😥
+>
+> **Don't worry!**\
+> You can use `git-bash` for executing the command on windows.\
+> Or, You can create them manually. 😁
 
 **Install dev dependencies**
 ```bash
@@ -202,7 +212,7 @@ dotenv.config({
 ### Code snippets
 > [!IMPORTANT]\
 > **Resolve errors**\
-> By Providing the complete path in `import` method, which means with extensions. So then we can resolve errors
+> By Providing the complete path in `import` method, which means with extensions to prevent errors.
 > ```js
 > import connectDB from "./db/index.js";
 > //...
@@ -302,7 +312,7 @@ const connectDB = async () => {
 export default connectDB;
 ```
 > [!NOTE]\
-> We can store the connection instance in a variable so that we can see some information and console a message for connetion success.
+> We can store the connection instance in a variable so that we can see some information and console a message for connection success.
 
 #### Database connection call
 `src/index.js`
@@ -331,7 +341,7 @@ const app = express()
 export { app }
 ```
 > [!NOTE]\
-> We will export the app as named export
+> We will use named export as `export { app }` to export the app.
 
 `src/index.js`
 ```js
@@ -400,7 +410,7 @@ app.use((err, req, res, next) => {
     // Some code to be executed  
 });
 ```
-> [!NOTE]\
+> [!IMPORTANT]\
 > `middlewares` have 4 parameters
 > 
 > `err` The error object that was thrown or passed to the next function with an error argument.\
@@ -451,7 +461,7 @@ const asyncHandler = (requestHandler)=> {
 export { asyncHandler }
 ```
 > [!IMPORTANT]\
-> It is a higher order function which further returns a function\
+> It is a higher order function which further `return`s a function\
 > We can reuse the utility. 🤩
 
 `src/utils/ApiError.js`
@@ -483,7 +493,7 @@ export { ApiError }
 > [!NOTE]\
 > Custom API Error response is very useful for simplifying the custom error messages.
 > 
-> Here we are extending the Error class available in node.js
+> Here we are extending the Error `class` available in `node.js`
 
 `src/utils/ApiResponse.js`
 ```js
@@ -550,7 +560,7 @@ const userSchema = new Schema({
 })
 ```
 
-But we will follow a best practice
+But we will follow a best practice.
 ```js
 const userSchema = new Schema({
         username: {
@@ -562,7 +572,7 @@ const userSchema = new Schema({
 })
 ```
 
-Connection between two data models
+Let's explore how to establish a connection or relationship between two data models. 🤔
 ```js
 // User Data Model
 const userSchema = new Schema({
@@ -611,7 +621,7 @@ const cartModel = Schema({
 export const Cart = mongoose.model("Cart", cartModel)
 ```
 > [!IMPORTANT]\
-> When we connect two data models, we often use fields like type and ref to establish relationships between them
+> When we connect two data models, we often use fields like `type` and `ref` to establish relationships between them
 > ```js
 > username: {
 >     type: mongoose.Schema.Types.ObjectId,
@@ -694,10 +704,18 @@ userSchema.methods.isPasswordCorrect = async function(password){
 export const User = mongoose.model("User", userSchema)
 ```
 > [!IMPORTANT]\
+> Password hashing is a technique to encrypt the given password to a random string.\
+> For hashing we use `bcrypt`.
+> 
+> Mongoose provides many hooks like `pre` and `post`.\
+> By using `pre` and `post` hooks, you can effectively manage and streamline your data processing workflows in a Mongoose application.
+> 
 > `userSchema.pre("event", callbackfn())`\
-> pre is a `hook` or `method` which accepts two values as: **Event** and a **CallBack_fn()**\
-> Since bcrypting is a time consuming task. For safety we will use a **async** function in callback.\
-> The callback function acts here as a middleware, So it must have `next()` flag to propagate to next node.\
+> pre is a `hook` or `method` which accepts two values as: **Event** and a **CallBack_fn()**
+>
+> Since, bcrypting is a time consuming task. For safety we will use a `async` function in callback.\
+> The callback function acts here as a middleware, So it must have `next()` flag to propagate to next node.
+>
 > Similarly, we can create custom methods using the Schema
 > ```js
 > userSchema.methods.isPasswordCorrect = async function(){
@@ -743,13 +761,13 @@ userSchema.methods.generateRefreshToken = function(){
 ```
 
 > [!NOTE]\
-> `jwt.sign({payload}, secret, {expiry})`\
-> Refresh Token has less payload compare to Access Token.
+> `jwt.sign({ PAYLOAD }, SECRET, { EXPIRY })`\
+> A refresh token has a smaller payload compared to an access token.
 > 
 > Create environment variables for `ACCESS_TOKEN_SECRET`, `ACCESS_TOKEN_EXPIRY`, `REFRESH_TOKEN_SECRET` & `REFRESH_TOKEN_EXPIRY`
 
-#### File Handling
-We don't handle files in our local server instead we use third party services like **AWS** and **cloudinary**.
+#### File Handling 📄
+We don't handle files on our local server; instead, we use third-party services like **AWS** and **Cloudinary**.
 
 **Install dependencies**
 ```bash
@@ -758,9 +776,54 @@ npm i cloudinary multer
 
 Reference: <a href="https://cloudinary.com/" target="_blank">**Cloudinary**</a> | <a href="https://www.npmjs.com/package/multer" target="_blank">**Multer**</a>
 
-To upload files in cloudinary we use multer as a middleware.
+To upload files to Cloudinary, we will use **Multer** as a **middleware**.
 
 `src/utils/cloudinary.js`
+```js
+import { v2 as cloudinary } from "cloudinary"
+
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const uploadOnCloudinary = ()=> {
+    try {
+
+    } catch () {
+
+    }
+}
+
+export { uploadOnCloudinary }
+```
+> [!NOTE]\
+> SignUp and create an account on Cloudinary.\
+> Look for cloudinary configuration, It is more safer to store sensitive data on environment file.\
+> Uploading files to Cloudinary can cause errors, so it is better to use a try and catch wrapper around the process.
+
+```js
+import { v2 as cloudinary } from "cloudinary"
+
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const uploadOnCloudinary = ()=> {
+    try {
+
+    } catch (error) {
+        fs.unlinkSync(localFilePath) // removes the locally saved temporary file as the uplaod operation got failed
+        return null;
+    }
+}
+
+export { uploadOnCloudinary }
+```
+> We aim to maintain cleanliness in our application, promptly removing files from temporary storage if an operation fails.
 ```js
 import { v2 as cloudinary } from "cloudinary"
 import fs from "fs"
@@ -774,17 +837,18 @@ cloudinary.config({
 const uploadOnCloudinary = async (localFilePath)=> {
     try {
         if (!localFilePath) return null
-        // upload the file on cloudinary
+
+        // Upload the file on cloudinary
         const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "auto"
         })
 
-        fs.unlinkSync(localFilePath) // remove the locally saved temporary file as the upload operation got success
+        fs.unlinkSync(localFilePath) // removes the locally saved temporary file as the upload operation got success
 
         return response;
 
     } catch (error) {
-        fs.unlinkSync(localFilePath) // remove the locally saved temporary file as the uplaod operation got failed
+        fs.unlinkSync(localFilePath) // removes the locally saved temporary file as the upload operation got failed
         return null;
     }
 }
@@ -792,10 +856,21 @@ const uploadOnCloudinary = async (localFilePath)=> {
 export { uploadOnCloudinary }
 ```
 > [!NOTE]\
-> The code snippet is **Reusable**\
-> Make sure you have created environment variables or not.
+> There is a high chance that the user may not send any files to upload. In such cases, it's best to return a `null` value.
+> 
+> Uploading files is a time-consuming task, so it's better to `await` the process and make the method asynchronous.
+> ```js
+> await cloudinary.uploader.upload(localFilePath, {
+>     resource_type: "auto"
+> })
+> ```
+> The `upload()` method accepts two arguments as local path of the file and second argument as an object to define resource_type and many other properties related to the file.\
+> We need to `return` some response to the user so that we will store it in a variable.
+> 
+> This code snippet is **Reusable**. 🤩
 
 `src/middlewares/multer.middleware.js`
+
 ```js
 import multer from "multer";
 
@@ -811,8 +886,17 @@ const storage = multer.diskStorage({
 export const upload = multer({ storage })    // ES6 Module `multer({ storage: storage })`
 ```
 > [!IMPORTANT]\
-> Create some directories as `public/temp`\
-> To hold temporary files.
+> Multer allows us to choose the type of storage.
+>
+> **Memory Storage**\
+> Files are stored in memory as Buffer objects.\
+> This is suitable for handling small files or cases where you want to process the file in-memory without saving it permanently to disk.
+>
+> **Disk Storage**\
+> Files are stored on the disk of the server.\
+> You can configure the destination directory and the filename. This is ideal for handling larger files or when you need to persist uploaded files.
+>
+> For now we will use `diskStorage`.
 
 ### `Controllers` and `Routes`
 
@@ -820,7 +904,7 @@ We will see on scroll down. How can we write controller's code effectively.
 
 `src/controllers/user.controller.js`
 ```js
-import {asyncHandler} from "../utils/asyncHandler.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
 
 const registerUser = asyncHandler( async (req, res) => {
     await res.status(200).json({
@@ -865,13 +949,16 @@ export { app }
 > We will write all routes below the already created middlewares\
 > Because we are going to use the route as a middleware.
 >
+> POSTMAN Desktop App<br/>
+> <a href="https://www.postman.com/downloads/" target="_blank">**Download**</a>
+>
 > Now, We can test the response using **Postman**\
 > `http://localhost:8000/api/v1/users/register`
 > 
 > It will give a response as
 > ```json
 > {
->    message: "OK! Response received"
+>    "message": "OK! Response received"
 > }
 > ```
 > On a `POST` request at the given URL.
@@ -898,10 +985,10 @@ For example:
 > [!IMPORTANT]\
 > **Algorithms are nothing just steps**. 😁
 >
-> Algorithm helps to write the code in a order\
-> If we write all the steps before writing the code.\
-> It saves our lots of time because we know what is the next step.\
-> We don't need to worry about the next step, what should be.
+> Algorithms help to write code in a structured order.\
+> If we outline all the steps before writing the code,
+> it saves us a lot of time because we already know what the next step should be.\
+> This eliminates the need to worry about what comes next.
 
 #### How to use `middlewares` in `Router` ?
 `src/routes/user.routes.js`
@@ -927,7 +1014,7 @@ router.route("/register").post(
 ```
 
 > [!IMPORTANT]\
-> We will inject a middleware before reaching the route as\
+> We'll inject a middleware before reaching the route,\
 > `router.route("/register").post(upload.fields([])), registerUser)`
 > 
 > In this case we are using multer as a middleware for file uploading on cloudinary\
@@ -1390,3 +1477,47 @@ export { registerUser }
 >
 > By: *Hitesh Sir*! 💖
 
+As we have already discussed that we don't have any frontend yet.<br/>
+That is why we will send data through **POSTMAN**
+
+#### Follow the instructions to use postman
+
+**STEP 1**: Open postman and create a new tab by clicking `+` sign<br/>
+Enter the url as `http://localhost:8000/api/v1/users/register`
+
+**STEP 2**: Select `POST` method from dropdown
+<select>
+    <option>GET</option>
+    <option>POST</option>
+    <option>PUT</option>
+    <option>HEAD</option>
+</select>
+
+**STEP 3**: We will send data via **Body**<br/>
+Body has multiple ways to send data to backend as<br/>
+<div style="display: flex">
+<input type="radio" id="none" name="datatype"/>
+<label for="none">none</label> &nbsp;&nbsp;
+<input type="radio" id="form-data" name="datatype"/>
+<label for="form-data">form-data</label> &nbsp;&nbsp;
+<input type="radio" id="x-www-form-urlencoded" name="datatype"/>
+<label for="x-www-form-urlencoded">x-www-form-urlencoded</label> &nbsp;&nbsp;
+<input type="radio" id="raw" name="datatype"/>
+<label for="raw">raw</label> &nbsp;&nbsp;
+<input type="radio" id="binary" name="datatype"/>
+<label for="binary">binary</label> &nbsp;&nbsp;
+<input type="radio" id="GraphQL" name="datatype"/>
+<label for="GraphQL">GraphQL</label>
+</div> <br/>
+
+We will choose the **form-data**, it has `key-value` pairs to send data.
+> [!IMPORTANT]\
+> It has advantage over `raw` and `x-www-form-urlencoded`.\
+> Form data is able to send files.\
+> Since, We are sending files. So form-data is the better option. 😎
+>
+> In keys write the names all the fields we are accepting in backend.\
+> As `fullName` `username` `email` `password` `avatar` `coverImage`.
+
+For better explanation, How to use postman?<br/>
+Check out the videos. 🤓

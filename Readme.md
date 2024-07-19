@@ -1521,3 +1521,100 @@ We will choose the **form-data**, it has `key-value` pairs to send data.
 
 For better explanation, How to use postman?<br/>
 Check out the videos. 🤓
+
+### Cover Image : Bug 🐛
+*When the user does not pass a cover image*.<br/>
+As I mentioned earlier, programming often involves solving **bugs** and **errors**. 🤓
+
+When we try to create a user without a cover image, we get an error.<br/>
+This is not a backend or server error; it's a core JavaScript error.
+
+**Here is the solution**<br/>
+`src/routes/user.routes.js`
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+const registerUser = asyncHandler( async (req, res) => {
+
+    const { fullName, email, username, password } = req.body;
+
+    if (
+        [fullName, email, username, password].some((field)=> field?.trim() === "")
+    ) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    const existedUser = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+
+    if (existedUser) {
+        throw new ApiError(409, "User with email or username already exist")
+    }
+
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+    if (!avatar) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+    const user = await User.create({
+        fullName,
+        avatar: avatar.url,
+        coverImage: coverImage?.url || "",
+        email,
+        password,
+        username: username.toLowerCase()
+    })
+
+    const createdUser = await User.findById(user._id).select(
+        "-password -refreshToken"
+    )
+
+    if (!createdUser) {
+        throw new ApiError(500, "Something went wrong while registering the user")
+    }
+
+    return res.status(201).json(
+        new ApiResponse(200, createdUser, "User registered successfully")
+    )
+
+} )
+
+export { registerUser }
+```
+> [!IMPORTANT]\
+> Since we are not checking for the cover image, if the user does not provide a cover image, we need to create a checkpoint.
+> ```js
+> let coverImageLocalPath;
+> if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+>     coverImageLocalPath = req.files.coverImage[0].path
+> }
+> ```
+> Here, we will try to access the cover image from the files if available.\
+> Otherwise, the value will be `undefined`.
+
+***
+
+### Cloudinary Response 🤩
+We will receive an object.<br/>
+`asset_id` `public_id` `version` `version_id` `signature` `width: 720` `heigth: 720` `resource_type: "image"` `created_at` `tags` `bytes` `type: "upload"` `etag` `placeholder: false` `url` `secure_url` `asset_folder` `display_name` `original_filename` `api_key`
+
+***

@@ -930,7 +930,9 @@ export default router
 
 **Update `app.js` file**
 ```js
+// All imports
 // ...
+
 // All middlewares
 // ... 
 
@@ -969,7 +971,7 @@ If you want to create a controller which will handle all the user related functi
 Think and write the **ALGORITHMS** for the controller, What you need in your controller and what you are going to do there.<br/>
 For example:
 ```js
-// ALGORITHMS
+// ALGORITHM for Register a User
 
 // get user details from frontend
 // validation - not empty
@@ -993,9 +995,8 @@ For example:
 #### How to use `middlewares` in `Router` ?
 `src/routes/user.routes.js`
 ```js
-/*
-    imports ...
-*/
+import { Router } from "express"
+import { registerUser } from "../controllers/user.controller.js"
 import { upload } from "../middlewares/multer.middleware.js"
 
 router.route("/register").post(
@@ -1026,8 +1027,11 @@ router.route("/register").post(
 > Each field can have its own name and maximum count of files that can be uploaded.\
 > This provides fine-grained control over the file upload process.
 
-#### Lets rewrite the `user.controller` file
-We will follow the Algorithm already written
+***
+
+### Registration method
+We have the Algorithm to write **register user** method.<br/>
+We will start rewriting `user.controller.js` file
 
 **1. Get data from frontend**
 ```js
@@ -1618,3 +1622,1170 @@ We will receive an object.<br/>
 `asset_id` `public_id` `version` `version_id` `signature` `width: 720` `heigth: 720` `resource_type: "image"` `created_at` `tags` `bytes` `type: "upload"` `etag` `placeholder: false` `url` `secure_url` `asset_folder` `display_name` `original_filename` `api_key`
 
 ***
+
+### Login method
+We have written method for register a user.<br/>
+Now, We will write another method for login by following these Algorithm
+```js
+// ALGORITHM for User Login Method
+
+// req body -> data
+// check for username or email
+// find the user
+// password check
+// access and refresh token
+// send cookie
+```
+
+**1**. Create Login method in `user.controller.js`
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> Create a login method using `asyncHandler()` and `export` it as named export
+
+
+**2**. Get data from request body
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const { username, email, password } = req.body
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> [!NOTE]\
+> Assuming that we will get `username`, `email` and `password` from the user.
+
+**3**. Check for username or email
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const {username, email, password} = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> [!IMPORTANT]\
+> Since, We can login with either `username` or `email`.\
+> Therefore, We need atleast one of them to proceed login.
+
+**4**. Find the user if exist else throw an error
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const {username, email, password} = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> [!NOTE]\
+> `User.findOne()` is a method to find a document in database.\
+> And we have learned that- *"Our database is in another continent"*.
+> 
+> So `await` it, because database call takes time. 🐌
+>
+> We can use filter methods in `findOne()` inside `{}` and the method starts with `$` sign
+> ```js
+> const user = await User.findOne({
+>    $or: [{username}, {email}]
+> })
+> ```
+> This `$or` method will find the user basis of `username` or `email`.\
+> If the user not exist throw an error.
+
+**5**. Password validation
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const { username, email, password } = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> [!NOTE]\
+> In the user model, We have a method for password comparison named as `isPasswordCorrect()`.
+>
+> Don't get confused between `user` and `User` 🤔\
+> `User` is a schema model acts as a bridge between the database and our local server. It helps to talk with database.\
+> The `user` is a variable instance holds the data of found user after the execution of `findOne()` method, and we will use it for validations.
+> 
+> Again `user.isPasswordCorrect()` is a method for password validation. Which helps to match the entered password with the password saved in the database.\
+> Don't forget to `await` it.
+
+**6**. Generate access token and refresh token
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+const generateAccessAndRefreshTokens = (userId) => {
+    
+}
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const { username, email, password } = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+    generateAccessAndRefreshTokens(user._id)
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> For generating access and refresh token, We will create a separate internal method which will accept user id generated by mongodb.\
+> `generateAccessAndRefreshTokens(user._id)` here `_id` is generated by mongodb.
+>
+> It is better to write internal methods after the `import`s.
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+const generateAccessAndRefreshTokens = (userId) => {
+    try {
+        
+    } catch (error) {
+        throw new ApiError(500,  "Something went wrong while generating refresh and access token")
+    }
+}
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const { username, email, password } = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+    generateAccessAndRefreshTokens(user._id)
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> Since, We are dealing with database errors may occur.\
+> For the safety purpose wrap the code inside a `try` and `catch` block.
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+const generateAccessAndRefreshTokens = async (userId) => {
+    try {
+
+        const user = await User.findById(userId)
+
+    } catch (error) {
+        throw new ApiError(500,  "Something went wrong while generating refresh and access token")
+    }
+}
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const { username, email, password } = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+    generateAccessAndRefreshTokens(user._id)
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> [!NOTE]\
+> For generating tokens we will have to find a user.\
+> We will find the user with the passed `userId` in the parameter.
+>
+> `User.findById(userId)` deals with database, It will definitely take time to process, must `await` it. and the method should be `async` method.\
+> Store the received user in a variable.
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+const generateAccessAndRefreshTokens = async (userId) => {
+    try {
+
+        const user = await User.findById(userId)
+
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({ validateBeforeSave: false })
+
+        return { accessToken, refreshToken }
+
+    } catch (error) {
+        throw new ApiError(500,  "Something went wrong while generating refresh and access token")
+    }
+}
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const { username, email, password } = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+    generateAccessAndRefreshTokens(user._id)
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> [!IMPORTANT]\
+> We have methods for generating access and refresh token in User model
+> ```js
+> const accessToken = user.generateAccessToken()
+> const refreshToken = user.generateRefreshToken()
+> ```
+> `generateAccessToken()` and `generateRefreshToken()` are the methods.
+> 
+> Now we will save the refresh token in database so that we don't have to login for every task.\
+> Database document is nothing just an object so we can access it's attributes.
+> ```js
+> user.refreshToken = refreshToken
+> ```
+> ```js
+> user.refreshToken = refreshToken
+> await user.save()
+> ```
+> `user.save()` method is used to save the refresh token in the database.\
+> Since, password is **required** for every input in database.\
+> So we can simply add a parameter as
+> ```js
+> await user.save({validateBeforeSave: false})
+> ```
+>
+> Once, access and refresh tokens are generated we can `return` them to the user.\
+> This time we will `return` tokens as an object.
+
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+const generateAccessAndRefreshTokens = async (userId) => {
+    try {
+
+        const user = await User.findById(userId)
+
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave: false})
+
+        return { accessToken, refreshToken }
+
+    } catch (error) {
+        throw new ApiError(500,  "Something went wrong while generating refresh and access token")
+    }
+}
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const { username, email, password } = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> [!NOTE]\
+> Inside the `generateAccessAndRefreshTokens()` method we are dealing with database. It is better to `await` the method.
+>
+> The method provides us access and refresh tokens in the form of an object. So we can destruct values from the object as `{ accessToken, refreshToken }`
+
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+const generateAccessAndRefreshTokens = async (userId) => {
+    try {
+
+        const user = await User.findById(userId)
+
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave: false})
+
+        return { accessToken, refreshToken }
+
+    } catch (error) {
+        throw new ApiError(500,  "Something went wrong while generating refresh and access token")
+    }
+}
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const {username, email, password} = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> [!IMPORTANT]\
+> The `user` variable doesn't have the value of refresh token because, we have accessed the user before generating tokens.
+> ```js
+> const user = await User.findOne({
+>     $or: [{username}, {email}]
+> })
+> ```
+> That is why, we need the updated user instance as well as we have some unnecessary data fields like password and refresh token in the created `user` instance.
+> 
+> So time to make another database call to get updated `user` instance excluding password and refresh token, and store it in another variable as `loggedInUser`
+> ```js
+> const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+> ```
+
+**7**. Sending cookie
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+const generateAccessAndRefreshTokens = async (userId) => {
+    try {
+
+        const user = await User.findById(userId)
+
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave: false})
+
+        return { accessToken, refreshToken }
+
+    } catch (error) {
+        throw new ApiError(500,  "Something went wrong while generating refresh and access token")
+    }
+}
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const { username, email, password } = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> [!NOTE]\
+> When we send cookies, we have to design some options for the cookies.\
+> Options are nothing just an Object
+> ```js
+> const options = {
+>    httpOnly: true,
+>    secure: true
+> }
+> ```
+> These options defines that cookies are modifiable in the server only. But we can access and see them in frontend.
+
+Return a response
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+const generateAccessAndRefreshTokens = async (userId) => {
+    try {
+
+        const user = await User.findById(userId)
+
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave: false})
+
+        return { accessToken, refreshToken }
+
+    } catch (error) {
+        throw new ApiError(500,  "Something went wrong while generating refresh and access token")
+    }
+}
+
+
+// Register User
+// ...
+// ...
+
+
+const loginUser = asyncHandler( async (req, res) => {
+    
+    const { username, email, password } = req.body
+
+    if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+        new ApiResponse(
+            200,
+            {
+                user: loggedInUser, accessToken, refreshToken
+            },
+            "User logged in Successfully"
+        )
+    )
+
+} )
+
+export { 
+    registerUser,
+    loginUser
+}
+```
+> [!NOTE]\
+> In the response object we wil return `status` code, `cookie`s and a `json` object.
+> ```js
+> return res.status(200)
+> ```
+>
+> We have access of `cookie`s because we have injected a middleeware for `cookie`s in `app.js`.
+> ```js
+> return res
+> .status(200)
+> .cookie("accessToken", accessToken, options)
+> ```
+> `cookie(name, value, options)`
+
+### Logout method
+
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+// generateAccessAndRefreshTokens method
+// ...
+// ...
+
+// Register User
+// ...
+// ...
+
+// Login User
+// ...
+// ...
+
+
+const logoutUser = asyncHandler( async (req, res) => {
+    
+} )
+
+export { 
+    registerUser,
+    loginUser,
+    logoutUser
+}
+```
+> Create a logout user method using `asyncHandler()`.
+
+> [!IMPORTANT]\
+> For logout we don't need any kind of password validation.\
+> Logout must be a secured method so that nobody could logout any other user by providing their username or email.
+
+#### Authentication middleware
+Authentication middleware is a custom middleware. 😋<br/>
+`src/middlewares/auth.middleware.js`
+
+```js
+import { asyncHandler } from "../utils/asyncHandler";
+
+export const verifyJWT = asyncHandler( async (req, res, next) => {
+    
+})
+```
+> Create a method as `verifyJWT` with the help of `asyncHandler()`
+> 
+> We have learned that middleware has four parameters as\
+> `(err, req, res, next) => {}`
+
+```js
+import { asyncHandler } from "../utils/asyncHandler";
+import { ApiError } from "../utils/ApiError";
+
+export const verifyJWT = asyncHandler( async (req, res, next) => {
+    try {
+    
+    } catch (error) {
+        throw new ApiError(401, "Invalid Access Token")
+    }
+})
+```
+> Start a `try` and `catch` block.
+
+```js
+import { asyncHandler } from "../utils/asyncHandler";
+import { ApiError } from "../utils/ApiError";
+
+export const verifyJWT = asyncHandler( async (req, res, next) => {
+    try {
+
+        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+
+        if (!token) {
+            throw new ApiError(401, "Unauthorized request")
+        }
+    
+    } catch (error) {
+        throw new ApiError(401, "Invalid Access Token")
+    }
+})
+```
+> [!IMPORTANT]\
+> We have already saved some information in `cookie`s during the user login. So now `cookie`s are accessible.\
+> We can get values from `cookie`s if available.
+>
+> We are trying to get access token from `cookie`s using **optional chaining** `(?.)` for safety.
+> ```js
+> req.cookies?.accessToken
+> ```
+> If the above method will get fail then get the value from header.
+> ```js
+> req.header("Authorization")?.replace("Bearer ", "")
+> ```
+> 
+> If token not available throw an error.
+
+```js
+import { asyncHandler } from "../utils/asyncHandler";
+import { ApiError } from "../utils/ApiError";
+import jwt from "jsonwebtoken";
+
+export const verifyJWT = asyncHandler( async (req, res, next) => {
+    try {
+
+        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+
+        if (!token) {
+            throw new ApiError(401, "Unauthorized request")
+        }
+
+        const decodedUser = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+    
+    } catch (error) {
+        throw new ApiError(401, "Invalid Access Token")
+    }
+})
+```
+> We will use `jwt` for verifying and the `verify()` method has two arguments **token** and **secret**.
+
+```js
+import { asyncHandler } from "../utils/asyncHandler";
+import { ApiError } from "../utils/ApiError";
+import jwt from "jsonwebtoken";
+import { User } from "../models/user.model";
+
+export const verifyJWT = asyncHandler( async (req, res, next) => {
+    try {
+
+        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+
+        if (!token) {
+            throw new ApiError(401, "Unauthorized request")
+        }
+
+        const decodedUser = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+
+        const user = await User.findById(decodedUser?._id).select("-password -refreshToken")
+
+        if (!user) {
+            throw new ApiError(401, "Invalid Access Token")
+        }
+    
+    } catch (error) {
+        throw new ApiError(401, "Invalid Access Token")
+    }
+})
+```
+> [!NOTE]\
+> Store the decoded user in a new variable without password and refresh token.
+>
+> For finding the decoded user in the database we have only one bridge, I mean `User` model schema.\
+> If the user not exist throw an error.
+
+```js
+import { asyncHandler } from "../utils/asyncHandler";
+import { ApiError } from "../utils/ApiError";
+import jwt from "jsonwebtoken";
+import { User } from "../models/user.model";
+
+export const verifyJWT = asyncHandler( async (req, _, next) => {
+    try {
+
+        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+
+        if (!token) {
+            throw new ApiError(401, "Unauthorized request")
+        }
+
+        const decodedUser = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+
+        const user = await User.findById(decodedUser?._id).select("-password -refreshToken")
+
+        if (!user) {
+            throw new ApiError(401, "Invalid Access Token")
+        }
+
+        req.user = user;
+        next()
+    
+    } catch (error) {
+        throw new ApiError(401, "Invalid Access Token")
+    }
+})
+```
+> [!IMPORTANT]\
+> As discussed earlier, middlewares have the capacity of modifying `req` and `res` object.\
+> In this case we are adding an object in `req` object.
+> 
+> And propagate it to the next node in the list using `next()` flag.
+>
+> Since, we are doing nothing with the `res` object. So that we can replace it by a underscore `(_)` in the parameter.
+
+#### Adding `route`s to the `user.routes.js`
+**1**. Create login route
+```js
+import { Router } from "express"
+import { loginUser, registerUser } from "../controllers/user.controller.js"
+import { upload } from "../middlewares/multer.middleware.js"
+
+const router = Router()
+
+// User registration route
+// ...
+
+router.route("/login").post(loginUser)
+
+export default router
+```
+
+**2**. Create logout route
+```js
+import { Router } from "express"
+import { loginUser, logoutUser, registerUser } from "../controllers/user.controller.js"
+import { upload } from "../middlewares/multer.middleware.js"
+import { verifyJWT } from "../middlewares/auth.middleware.js"
+
+const router = Router()
+
+// User registration route
+// ...
+
+router.route("/login").post(loginUser)
+
+// Secured routes
+router.route("/logout").post(verifyJWT, logoutUser)
+
+export default router
+```
+> [!NOTE]\
+> We have a middleware as `auth.middleware.js` for verifying.\
+> Inject it in the logout route before hitting the logout user controller.
+> 
+> Middleware executes one after one in the series, and they must have a `next()` flag for the propagation.\
+> `post(middleware1, middleware2, endpoint)`
+
+Back to the `user.controller.js`
+
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+// generateAccessAndRefreshTokens method
+// ...
+// ...
+
+// Register User
+// ...
+// ...
+
+// Login User
+// ...
+// ...
+
+
+const logoutUser = asyncHandler( async (req, res) => {
+
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                refreshToken: undefined
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+} )
+
+export { 
+    registerUser,
+    loginUser,
+    logoutUser
+}
+```
+> [!IMPORTANT]\
+> To logout we need a user.
+> 
+> In the logout method we don't send any data from the frontend like `username` or `email`.\
+> Because user is already logged in that is why we are trying to log out.\
+>
+> Also, we have injected a middleware in the logout route as `verifyJWT`.\
+> Which modifies the `req` object and adds a new attribute as `user` with user data fields in the form of object.\
+> Accessing values from the `user` object embedded with `req` object is possible with dot notation as `req.body.[ data-field ]`
+>
+> When we logout a user, we must have to reset or clear the value of refresh token.
+> ```js
+> User.findByIdAndUpdate()
+> ```
+> is a mongodb method used to find and update any data field in the document. It accepts three arguments as 
+> ```js
+> findByIdAndUpdate(
+>       req.user._id,        // finds the user on the basis of id generated by mongodb
+>       {
+>           $set: {
+>               refreshToken: undefined             // Value to be updated
+>           }
+>       },
+>       {
+>           new: true       // for getting the most updated value
+>       }
+> )
+> ```
+
+```js
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { User } from "../models/user.model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+
+
+// generateAccessAndRefreshTokens method
+// ...
+// ...
+
+// Register User
+// ...
+// ...
+
+// Login User
+// ...
+// ...
+
+
+const logoutUser = asyncHandler( async (req, res) => {
+
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                refreshToken: undefined
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(
+        new ApiResponse(200, {}, "User logged Out")
+    )
+
+} )
+
+export { 
+    registerUser,
+    loginUser,
+    logoutUser
+}
+```
+> Set options for `cookie`s and remove saved `cookie`s using `clearCookie()`.
